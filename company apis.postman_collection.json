@@ -1,0 +1,147 @@
+{
+	"info": {
+		"_postman_id": "c4639eb8-73e5-4785-81ad-c490c4fbbfa4",
+		"name": "company apis",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26038466"
+	},
+	"item": [
+		{
+			"name": "create-company",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjc3MjY4NTUyLCJpYXQiOjE2NzcyNjczNTIsImp0aSI6IjI5MTU0OTNjZmFhNTRmNThiNDNmOGZhMDNkZDc4NWUxIiwidXNlcl9pZCI6MX0.nULAzrkAEJ0-GIpfwoO8VRhBDbzLhrS-hBwDrRomNMc",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"ATMS\",\r\n    \"email\": \"abc@example.com\",\r\n    \"contact\": \"1234567890\",\r\n    \"contact_person\": \"John Doe\",\r\n    \"address\": \"123 Main St, Anytown\",\r\n    \"gst\": \"GST123\",\r\n    \"pan_no\": \"PAN123\",\r\n    \"owners_name\": \"Jane Doe\",\r\n    \"owners_email\": \"jane@example.com\",\r\n    \"owners_birth_date\": \"1990-01-01\",\r\n    \"fees\": 100.0\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/company/create-company/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"company",
+						"create-company",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get all company",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "get company by id",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjc3MjcxMDc2LCJpYXQiOjE2NzcyNjk4NzYsImp0aSI6IjQ4NDAwY2MyODY4ODRmOTViMTliODdhMmEzODBlZjRhIiwidXNlcl9pZCI6MX0.kk2uXwK6i9oo6RKumfqHB-okRiaIy6_GdomjOp7zZAM",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/company/company/3",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"company",
+						"company",
+						"3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "delete-company",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/company/company/3",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"company",
+						"company",
+						"3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "update-company",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/company/company/3",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"company",
+						"company",
+						"3"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
