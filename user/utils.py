@@ -1,7 +1,10 @@
-import threading
 from django.core.mail import EmailMessage
 import os
 import re
+from django.core.mail import send_mail
+from api.settings import EMAIL_HOST_USER
+from rest_framework.response import Response
+from rest_framework import status
 
 
 class Util:
@@ -15,33 +18,20 @@ class Util:
         )
         email.send()
 
-# class UserCreationThread(threading.Thread):
-#     def __init__(self, password, role, name, email, host):
-#         super().__init__()
-#         self.subject = "CFO Services/Visit Report Tool"
-#         self.sender = settings.EMAIL_HOST_USER
-#         self.password = password
-#         self.role = role
-#         self.name = name
-#         self.email = email
-#         self.host = host
-#         self.stop_event = threading.Event()
 
-#     def run(self):
-#         data = {
-#             "link": self.host,
-#             "role": self.role,
-#             "name": self.name,
-#             "password": self.password,
-#             "email": self.email,
-#         }
-       
-#         # email.send()
-#         data.send()
-
-#         self.stop_event = threading.Event()
-
-
+def send_registration_email(user):
+        try:
+          subject = 'User Credentials'
+          message = f'Dear {user[0].name},\n\nThank you for registering on our website.Here are your login credentials , username{user[0].email},password{user[1]}'
+          from_email = EMAIL_HOST_USER
+          recipient_list = [user[0].email]
+          send_mail(subject, message, from_email, recipient_list)
+         
+        except Exception as e:
+             print(e)
+             return Response("mail not send", status=status.HTTP_400_BAD_REQUEST)
+        
+        
 check_gst = re.compile("^[0-9]{2}[A-Z]{5}[0-9]{4}" + "[A-Z]{1}[1-9A-Z]{1}" + "Z[0-9A-Z]{1}$")
 
 check_pan = re.compile("[A-Z]{5}[0-9]{4}[A-Z]{1}")

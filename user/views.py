@@ -1,3 +1,4 @@
+import threading
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
@@ -6,8 +7,7 @@ from .serializers import *
 from django.contrib.auth import authenticate,logout
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import TokenAuthentication
-
+from user.utils import send_registration_email
 
 # Generate Token Manually
 
@@ -23,9 +23,23 @@ def get_tokens_for_user(user):
 class UserRegistrationView(APIView):
 
     def post(self, request):
+        check_creator = request.data['creator']
+        check_reporting_to = request.data['reporting_to']
+        
+
+        if not User.objects.filter(id=check_creator).exists():
+            raise serializers.ValidationError("Creator doesn't exist")
+
+        if not User.objects.filter(id=check_reporting_to).exists():
+            raise serializers.ValidationError("Reporting user doesn't exist")
+
+        
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            user=serializer.save()
+            email_thread = threading.Thread(target=send_registration_email, args=[user])
+            email_thread.start()
+
             return Response("user created successfully", status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -38,25 +52,32 @@ class UserLoginView(APIView):
         email = serializer.data.get('email')
         password = serializer.data.get('password')
         user = authenticate(request=request,email=email, password=password)
+
         if user is not None:
+
             token = get_tokens_for_user(user)
             return Response({'token': token, 'msg': 'Login Successfully'}, status=status.HTTP_200_OK)
+        
         else:
-            return Response({'errors': ['Invalid User']},
-                            status=status.HTTP_404_NOT_FOUND)
+            return Response({'errors': ['Invalid User']},status=status.HTTP_404_NOT_FOUND)
         
 
-
-# class UserLogoutView(APIView):
-
-#     permission_classes = [IsAuthenticated]
+class UserLogoutView(APIView):
     
-#     def get(self, request):
-#         print(request.user)
-#         request.user.auth_token.delete()
-#         logout(request)
-#         return Response(status=status.HTTP_200_OK)
+    permission_classes = (IsAuthenticated,)
 
+    def post(self, request):
+        try:
+          
+            refresh_token = request.data.get('refresh_token')
+            print(refresh_token)
+            token = RefreshToken(refresh_token)
+        
+            token.blacklist()
+    
+            return Response({'msg': 'Logout Successfully'}, status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            return Response({'errors': [str(e)]}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserView(APIView):

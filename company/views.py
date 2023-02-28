@@ -1,18 +1,42 @@
+from django.forms import ValidationError
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
+from company.validator import validate_company
 from user.models import User
 from company.models import Company
 from company.serializers import *
 from rest_framework.permissions import IsAuthenticated
-# Create your views here.
 
+
+# Create your views here.
 
 class CompanyView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        
         creator = User.objects.get(email=request.user)
+        email = request.data['email']
+        name = request.data['name']
+        gst = request.data['gst']
+        pan_no = request.data['pan_no']
+        contact = request.data['contact']
+        check_company_name = Company.objects.filter(name=name)
+        check_company_email = Company.objects.filter(email=email)
+        documents = request.FILES["documents"] if request.FILES else None
+
+        
+        try:
+            validate_company(
+                contact=contact, 
+                email=email, 
+                name=name, 
+                documents=documents,
+            )
+        except ValidationError as e:
+            return Response({'error': e.message}, status=status.HTTP_400_BAD_REQUEST)
+        
         serializer = CreateCompanySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         company_data = serializer.validated_data

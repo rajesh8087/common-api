@@ -1,9 +1,4 @@
 from company.models import Company
-from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from rest_framework.validators import UniqueValidator
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 

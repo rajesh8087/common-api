@@ -32,8 +32,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     employee_id = serializers.IntegerField(validators=[UniqueValidator(queryset=User.objects.all())], required=True, min_value=1)
     contact = serializers.IntegerField(validators=[UniqueValidator(queryset=User.objects.all())], required=True, min_value=1)
     role = serializers.ChoiceField(choices=ROLE_CHOICES, required=True)
-    creator = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
-    reporting_to = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
+    creator = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
+    reporting_to = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=True)
 
     class Meta:
         model = User
@@ -41,7 +41,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
-        
+        # print(data)
         password = validated_data['password']
         confirm_password = validated_data.pop('confirm_password')
 

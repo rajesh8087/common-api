@@ -8,7 +8,7 @@ class CustomUserManager(BaseUserManager):
     for authentication instead of usernames.
     """
 
-    def create_user(self, email, name, role,creator,reporting_to, password, employee_id, contact, **extra_fields):
+    def create_user(self, email, name, password, employee_id, contact, **extra_fields):
         """
         Create and save a User with the given email and password.
         """
@@ -19,16 +19,12 @@ class CustomUserManager(BaseUserManager):
             name=name,
             employee_id=employee_id,
             contact=contact,
-            role=role,
-            creator=creator,
-            reporting_to=reporting_to,
-            # password=password,
             **extra_fields
         )
-
+        pass_email = password
         user.set_password(password)
         user.save(using=self._db)
-        return user
+        return user,pass_email
     
     
     def create_superuser(self, email, name, password, employee_id, contact, **extra_fields):
