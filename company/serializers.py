@@ -1,13 +1,12 @@
 from company.models import Company
 from rest_framework import serializers
+from company.models import Company
 
 
 class CreateCompanySerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = Company
         fields = '__all__'
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

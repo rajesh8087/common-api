@@ -4,15 +4,15 @@ from rest_framework import status
 from rest_framework.views import APIView
 from .models import User
 from .serializers import *
-from django.contrib.auth import authenticate,logout
+from django.contrib.auth import authenticate, logout
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from user.utils import send_registration_email
 
+
 # Generate Token Manually
 
 def get_tokens_for_user(user):
-
     refresh = RefreshToken.for_user(user)
     return {
         'refresh': str(refresh),
@@ -25,7 +25,6 @@ class UserRegistrationView(APIView):
     def post(self, request):
         check_creator = request.data['creator']
         check_reporting_to = request.data['reporting_to']
-        
 
         if not User.objects.filter(id=check_creator).exists():
             raise serializers.ValidationError("Creator doesn't exist")
@@ -33,10 +32,9 @@ class UserRegistrationView(APIView):
         if not User.objects.filter(id=check_reporting_to).exists():
             raise serializers.ValidationError("Reporting user doesn't exist")
 
-        
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            user=serializer.save()
+            user = serializer.save()
             email_thread = threading.Thread(target=send_registration_email, args=[user])
             email_thread.start()
 
@@ -51,30 +49,29 @@ class UserLoginView(APIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.data.get('email')
         password = serializer.data.get('password')
-        user = authenticate(request=request,email=email, password=password)
+        user = authenticate(request=request, email=email, password=password)
 
         if user is not None:
 
             token = get_tokens_for_user(user)
             return Response({'token': token, 'msg': 'Login Successfully'}, status=status.HTTP_200_OK)
-        
+
         else:
-            return Response({'errors': ['Invalid User']},status=status.HTTP_404_NOT_FOUND)
-        
+            return Response({'errors': ['Invalid User']}, status=status.HTTP_404_NOT_FOUND)
+
 
 class UserLogoutView(APIView):
-    
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         try:
-          
+
             refresh_token = request.data.get('refresh_token')
             print(refresh_token)
             token = RefreshToken(refresh_token)
-        
+
             token.blacklist()
-    
+
             return Response({'msg': 'Logout Successfully'}, status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
             return Response({'errors': [str(e)]}, status=status.HTTP_400_BAD_REQUEST)
@@ -88,8 +85,7 @@ class UserView(APIView):
         serializer = GetAllUserSerializer(users, many=True)
         response_data = serializer.data
         return Response(response_data, status=status.HTTP_200_OK)
-    
-    
+
     def delete(self, request, pk):
         user = User.objects.filter(id=pk)
         if user.exists():
@@ -99,27 +95,26 @@ class UserView(APIView):
         else:
             message = f"User with id {pk} does not exist."
             return Response({'message': message}, status=status.HTTP_404_NOT_FOUND)
-        
 
     def put(self, request, pk):
         user = User.objects.filter(id=pk)
 
         if user.exists():
-            request_data = UpdateUserSerializer(data=request.data,partial=True)
+            request_data = UpdateUserSerializer(data=request.data, partial=True)
             request_data.is_valid(raise_exception=True)
             request_data = request_data.validated_data
-            User.update_data(request_data,pk)
-            return Response({'message': "user updated successfully"},status=status.HTTP_200_OK)
-        
+            User.update_data(request_data, pk)
+            return Response({'message': "user updated successfully"}, status=status.HTTP_200_OK)
+
         else:
             message = f"User with id {pk} does not exist."
             return Response({'message': message}, status=status.HTTP_404_NOT_FOUND)
-        
-        
+
+
 class UserByIdView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request,pk):
+    def get(self, request, pk):
         user = User.objects.filter(id=pk).first()
         if user:
             serializer = GetAllUserSerializer(user)
@@ -128,7 +123,6 @@ class UserByIdView(APIView):
         else:
             message = f"User with id {pk} not found."
             return Response({'message': message}, status=status.HTTP_404_NOT_FOUND)
-    
 
 
 class UserChangePasswordView(APIView):

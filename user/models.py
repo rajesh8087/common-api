@@ -7,6 +7,7 @@ from company.models import Company
 
 timezone.activate('Asia/Kolkata')
 
+
 class User(AbstractBaseUser, PermissionsMixin):
     SUPER_ADMIN = "Super Admin"
     FRANCHISE_ADMIN = "Franchise Admin"
@@ -61,9 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         "Is the user a member of staff?"
         # Simplest possible answer: All admins are staff
         return self.is_admin
-    
 
     @classmethod
-    def update_data(self,validate_data,pk):
+    def update_data(self, validate_data, pk):
         User.objects.filter(id=pk).update(**validate_data)
-
