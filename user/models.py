@@ -5,10 +5,12 @@ from django.core.validators import validate_email
 from django.utils import timezone
 from company.models import Company
 
-timezone.activate('Asia/Kolkata')
+timezone.activate("Asia/Kolkata")
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+
+    # User defined Roles.
     SUPER_ADMIN = "Super Admin"
     FRANCHISE_ADMIN = "Franchise Admin"
     ADMIN = "Admin"
@@ -16,32 +18,50 @@ class User(AbstractBaseUser, PermissionsMixin):
     ASSISTANT_MANAGER = "Assistant Manager"
     ASSOCIATE = "Associate"
 
-    CHOICES = (
+    ROLE_CHOICES = (
         (SUPER_ADMIN, "Super Admin"),
         (FRANCHISE_ADMIN, "Franchise Admin"),
         (ADMIN, "Admin"),
         (MANAGER, "Manager"),
         (ASSISTANT_MANAGER, "Assistant Manager"),
-        (ASSOCIATE, "Associate")
+        (ASSOCIATE, "Associate"),
     )
 
-    email = EmailField(unique=True, db_index=True, validators=[validate_email])
+    email = EmailField(unique=True, db_index=True)
     name = CharField(max_length=50)
-    employee_id = IntegerField(unique=True, )
+    employee_id = IntegerField(
+        unique=True,
+    )
 
     contact = PositiveBigIntegerField()
-    role = CharField(choices=CHOICES, max_length=50, default=SUPER_ADMIN)
+    role = CharField(choices=ROLE_CHOICES, max_length=50, default=SUPER_ADMIN)
     is_active = BooleanField(default=True)
 
     is_admin = BooleanField(default=False)
     is_superuser = BooleanField(default=False)
-    assigned_companies = ManyToManyField(Company, blank=True, related_name="assigned_companies", default=None)
+    assigned_companies = ManyToManyField(
+        Company, blank=True, related_name="assigned_companies", default=None
+    )
 
-    creator = ForeignKey("user.User", default=None, on_delete=DO_NOTHING, related_name="created_by", null=True)
-    reporting_to = ForeignKey("user.User", default=None, on_delete=DO_NOTHING, related_name="reports_to", null=True)
+    creator = ForeignKey(
+        "user.User",
+        default=None,
+        on_delete=DO_NOTHING,
+        related_name="created_by",
+        null=True,
+        blank=True,
+    )
+    reporting_to = ForeignKey(
+        "user.User",
+        default=None,
+        on_delete=DO_NOTHING,
+        related_name="employees",
+        null=True,
+        blank=True,
+    )
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['name', 'employee_id', 'contact']
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["name", "employee_id", "contact"]
     objects = CustomUserManager()
 
     def __str__(self):
@@ -62,7 +82,3 @@ class User(AbstractBaseUser, PermissionsMixin):
         "Is the user a member of staff?"
         # Simplest possible answer: All admins are staff
         return self.is_admin
-
-    @classmethod
-    def update_data(self, validate_data, pk):
-        User.objects.filter(id=pk).update(**validate_data)

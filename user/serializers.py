@@ -1,27 +1,20 @@
-from user.utils import send_password_reset_email
-from .models import User
-from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
+from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_recursive.fields import RecursiveField
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from rest_framework.validators import UniqueValidator
-from django.core.validators import RegexValidator
-from django.contrib.auth import get_user_model
-from rest_framework import serializers
+from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
+from django.utils.translation import gettext_lazy as _
+from user.utils import send_password_reset_email, check_contact, check_pass, check_name
 import re
-from user.utils import check_contact, check_pass, check_name
 from company.validator import contact_validator
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
-User = get_user_model()
-
-
-class UniqueEmailValidator:
-    def __call__(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("This email address is already in use.")
+from .models import User
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    default_error_messages = {"no_active_account": _("Invalid email or password.")}
+
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
@@ -42,34 +35,35 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(
         style={"input_type": "password"}, write_only=True
     )
-    ROLE_CHOICES = (
-        ("Super Admin", "Super Admin"),
-        ("Franchise Admin", "Franchise Admin"),
-        ("Admin", "Admin"),
-        ("Client", "Client"),
-        ("Manager", "Manager"),
-        ("Assistant Manager", "Assistant Manager"),
-        ("Associate", "Associate"),
-    )
-    email = serializers.EmailField(validators=[UniqueEmailValidator()], required=True)
-    name = serializers.CharField(max_length=50, required=True)
-    employee_id = serializers.IntegerField(
-        validators=[UniqueValidator(queryset=User.objects.all())],
-        required=True,
-        min_value=1,
-    )
-    contact = serializers.IntegerField(
-        validators=[UniqueValidator(queryset=User.objects.all()), contact_validator],
-        required=True,
-        min_value=1,
-    )
-    role = serializers.ChoiceField(choices=ROLE_CHOICES, required=True)
-    creator = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), required=True
-    )
-    reporting_to = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), required=True
-    )
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, required=True)
+
+    # ROLE_CHOICES = (
+    #     ("Super Admin", "Super Admin"),
+    #     ("Franchise Admin", "Franchise Admin"),
+    #     ("Admin", "Admin"),
+    #     ("Client", "Client"),
+    #     ("Manager", "Manager"),
+    #     ("Assistant Manager", "Assistant Manager"),
+    #     ("Associate", "Associate"),
+    # )
+    # email = serializers.EmailField(validators=[UniqueEmailValidator()], required=True)
+    # name = serializers.CharField(max_length=50, required=True)
+    # employee_id = serializers.IntegerField(
+    #     validators=[UniqueValidator(queryset=User.objects.all())],
+    #     required=True,
+    #     min_value=1,
+    # )
+    # contact = serializers.IntegerField(
+    #     validators=[UniqueValidator(queryset=User.objects.all()), contact_validator],
+    #     required=True,
+    #     min_value=1,
+    # )
+    # creator = serializers.PrimaryKeyRelatedField(
+    #     queryset=User.objects.all(), required=True
+    # )
+    # reporting_to = serializers.PrimaryKeyRelatedField(
+    #     queryset=User.objects.all(), required=True
+    # )
 
     class Meta:
         model = User
@@ -84,6 +78,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             "creator",
             "reporting_to",
         ]
+        extra_kwargs = {
+            "creator": {
+                "error_messages": {"does_not_exist": "Creator does not exists."}
+            }
+        }
 
     def create(self, validated_data):
         # print(data)
@@ -106,27 +105,24 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             )
 
         user = User.objects.create_user(**validated_data)
+
         return user
 
 
-class UserLoginSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField()
-
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["email", "password"]
-
-
-class GetAllUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = "__all__"
+        fields = ["id", "name", "email", "employee_id", "contact"]
 
 
 class UpdateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["name", "email", "contact"]
+
+    # def update(self, instance, validated_data):
+    #     instance.save(**validated_data)
+    #     return instance
 
 
 class UserChangePasswordSerializer(serializers.Serializer):
@@ -213,3 +209,44 @@ class UserPasswordResetSerializer(serializers.Serializer):
         except DjangoUnicodeDecodeError as identifier:
             PasswordResetTokenGenerator().check_token(user, token)
             raise serializers.ValidationError("Token is not Valid or Expired")
+
+
+class EmployeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["name", "employee_id", "role", "employees"]
+
+
+# Hierarchy from top to bottom
+"""
+        SuperAdmin -> (Suhas Sir)
+            |
+        Franchise Admin -> (Tanmay)
+            |
+        Admin/Partner -> (Bipin)
+            |
+          Manager -> (Rajesh)
+            |
+        Assistant Manager -> (Pranay)
+            |
+        Associate -> (Bhavesh)
+"""
+
+# Fetch Hierarchy from --> Lower to Upper i.e ( Bhavesh(Associate) ---> Suhas(Super Admin) )
+
+
+class FetchAncestorEmployeeSerializer(serializers.ModelSerializer):
+    reporting_to = RecursiveField(allow_null=True)
+
+    class Meta:
+        model = User
+        fields = ["name", "employee_id", "role", "reporting_to"]
+
+
+# Fetch Lower --> Upper to Lower i.e ( Suhas(Super Admin) --->  Bhavesh(Associate) )
+class FetchChildEmployeeSerializer(serializers.ModelSerializer):
+    employees = RecursiveField(allow_null=True, many=True)
+
+    class Meta:
+        model = User
+        fields = ["name", "employee_id", "role", "employees"]
